@@ -1,0 +1,112 @@
+---
+title: "Deaths (2010-2020)"
+output:
+  prettydoc::html_pretty:
+    theme: tactile
+    highlight: github
+    mathjax: null
+    self_contained: false
+    toc: true
+---
+
+```{css, echo=F}
+pre.sourceCode.r {overflow: auto;}
+```
+
+```{r, setup, message=F}
+library(CausalImpact)
+library(gghighlight)
+library(scales)
+library(zoo)
+```
+
+```{r}
+go <- function(deaths) {
+  model.args <- list(niter=1000, nseasons=12)
+
+  for (region in names(deaths)) {
+    cat(paste("\n\n###", region, "\n\n"))
+
+    monthly <- subset(deaths, select=region)
+    monthly$Cumulative <- ave(monthly,
+                              format(time(monthly), "%Y"),
+                              FUN=cumsum)
+    names(monthly) <- c("Monthly", "Cumulative")
+    data <- fortify.zoo(monthly, melt=T)
+    data$Year <- format(data$Index, "%Y")
+    data$Month <- as.numeric(format(data$Index, "%m"))
+    data$Index <- NULL
+
+    p <- function() {
+      ggplot(data) +
+        geom_line(aes(x=Month, y=Value, group=Year, color=Year)) +
+        gghighlight(Year == "2020",
+                    use_group_by=F,
+                    keep_scales=T,
+                    use_direct_label=F,
+                    calculate_per_facet=T) +
+        facet_wrap(~Series, dir="v", scales="free_y") +
+        xlab("") + ylab("Deaths") +
+        scale_y_continuous(labels=scales::label_number_si()) +
+        scale_x_discrete(limits=month.abb, guide=guide_axis(check.overlap=T))
+    }
+
+    print(suppressMessages(p()))
+
+    data <- subset(deaths, select=region)
+
+    if (any(is.na(data))) {
+      data <- na.approx(data, na.rm=T)
+      message("Missing data.")
+    }
+
+    tryCatch({
+      pre.period <- c(start(data), as.yearmon("Dec 2019"))
+      post.period <- c(as.yearmon("Jan 2020"), end(data))
+      impact <- CausalImpact(data,
+                             pre.period,
+                             post.period,
+                             model.args=model.args)
+      print(plot(impact))
+      cat(impact$report)
+    }, error=message)
+  }
+}
+
+get.sheet.url <- function(gid) {
+  paste("https://docs.google.com/spreadsheets/d/e/2PACX-1vQfgIZSsUrFzbmVK0hjbTjvY2TGI75FRkrU8rGKpLebZnfFFBCvFyI1zPgUE3uivCOmbOKOYJWyYUiQ/pub?gid=",
+        gid,
+        "&single=true&output=csv",
+        sep="")
+}
+```
+
+## Australia {.tabset}
+
+```{r, results="asis"}
+deaths <- read.csv.zoo(get.sheet.url("1434566235"), drop=F, FUN=as.yearmon)
+go(deaths)
+```
+
+## New Zealand {.tabset}
+
+```{r, results="asis"}
+deaths <- read.csv.zoo(get.sheet.url("894713646"), FUN=as.yearmon)
+go(deaths)
+```
+
+## US {.tabset}
+
+```{r, results="asis"}
+deaths <- read.csv.zoo(get.sheet.url("1095978846"), FUN=as.yearmon)
+deaths <- window(deaths, start=as.yearmon("Jan 2010"))
+go(deaths)
+```
+
+## UK {.tabset}
+
+```{r, results="asis"}
+deaths <- read.csv.zoo(get.sheet.url("0"), FUN=as.yearmon)
+deaths <- window(deaths, start=as.yearmon("Jan 2010"))
+go(deaths)
+```
