@@ -13,14 +13,14 @@ output:
 pre.sourceCode.r {overflow: auto;}
 ```
 
-```{r, setup, message=F}
+```{r setup, message=F}
 library(CausalImpact)
 library(gghighlight)
 library(scales)
 library(zoo)
 ```
 
-```{r}
+```{r logic}
 go <- function(deaths) {
   deaths <- na.trim(deaths)
   data <- deaths
@@ -84,29 +84,34 @@ by.region <- function(deaths) {
     go(data)
   }
 }
+```
 
+```{r data}
 get.sheet.url <- function(gid) {
   paste("https://docs.google.com/spreadsheets/d/e/2PACX-1vQfgIZSsUrFzbmVK0hjbTjvY2TGI75FRkrU8rGKpLebZnfFFBCvFyI1zPgUE3uivCOmbOKOYJWyYUiQ/pub?gid=",
         gid,
         "&single=true&output=csv",
         sep="")
 }
+
+au.deaths <- read.csv.zoo(get.sheet.url("1434566235"), FUN=as.yearmon)
+nz.deaths <- read.csv.zoo(get.sheet.url("894713646"), FUN=as.yearmon)
+us.deaths <- read.csv.zoo(get.sheet.url("1095978846"), FUN=as.yearmon)
+uk.deaths <- read.csv.zoo(get.sheet.url("0"), FUN=as.yearmon)
 ```
 
 ## Australia {.tabset}
 
 ```{r au, results="asis"}
-deaths <- read.csv.zoo(get.sheet.url("1434566235"), FUN=as.yearmon)
-total(deaths)
-by.region(deaths)
+total(au.deaths)
+by.region(au.deaths)
 ```
 
 ## New Zealand {.tabset}
 
 ```{r nz, results="asis"}
-deaths <- read.csv.zoo(get.sheet.url("894713646"), FUN=as.yearmon)
-total(deaths)
-by.region(deaths)
+total(nz.deaths)
+by.region(nz.deaths)
 ```
 
 ## US {.tabset}
@@ -115,15 +120,13 @@ Note: I couldn't find historical data for Puerto Rico, so it's excluded from
 impact analysis.
 
 ```{r us, results="asis"}
-deaths <- read.csv.zoo(get.sheet.url("1095978846"), FUN=as.yearmon)
-total(subset(deaths, select=-Puerto.Rico))
-by.region(deaths)
+total(subset(us.deaths, select=-Puerto.Rico))
+by.region(us.deaths)
 ```
 
 ## UK {.tabset}
 
 ```{r uk, results="asis"}
-deaths <- read.csv.zoo(get.sheet.url("0"), FUN=as.yearmon)
-total(deaths)
-by.region(deaths)
+total(uk.deaths)
+by.region(uk.deaths)
 ```
