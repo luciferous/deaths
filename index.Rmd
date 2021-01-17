@@ -1,16 +1,15 @@
 ---
 title: "Death trends"
 output:
-  prettydoc::html_pretty:
-    theme: tactile
-    highlight: github
+  html_document:
+    theme: cosmo
     mathjax: null
     self_contained: false
     toc: true
 ---
 
 ```{css, echo=F}
-pre.sourceCode.r {overflow: auto;}
+pre.r > code {white-space: pre;}
 ```
 
 ```{r setup, message=F}
@@ -72,6 +71,7 @@ go <- function(deaths) {
 }
 
 total <- function(deaths) {
+  deaths <- na.approx(deaths)
   data <- zoo(cbind(rowSums(deaths)), time(deaths))
   names(data) <- "V1"
   go(data)
