@@ -36,15 +36,14 @@ go <- function(deaths) {
   p <- function() {
     ggplot(data) +
       geom_line(aes(x=Month, y=Value, group=Year, color=Year)) +
-      gghighlight(Year == "2020",
+      gghighlight(Year %in% c("2020", "2019"),
                   use_group_by=F,
-                  keep_scales=T,
-                  use_direct_label=F,
                   calculate_per_facet=T) +
       facet_wrap(~Series, dir="v", scales="free_y") +
       xlab("") + ylab("Deaths") +
       scale_y_continuous(labels=scales::label_number_si()) +
-      scale_x_discrete(limits=month.abb, guide=guide_axis(check.overlap=T))
+      scale_x_discrete(limits=month.abb, guide=guide_axis(check.overlap=T)) +
+      theme_bw(base_size=15)
   }
 
   print(suppressMessages(p()))
@@ -65,7 +64,9 @@ go <- function(deaths) {
                            post.period,
                            model.args=model.args)
 
-    print(plot(impact) + scale_y_continuous(labels=scales::label_number_si()))
+    print(plot(impact) +
+            scale_y_continuous(labels=scales::label_number_si()) +
+            ylab("Deaths"))
     cat(impact$report)
   }, error=message)
 }
@@ -78,7 +79,7 @@ total <- function(deaths) {
 
 by.region <- function(deaths) {
   for (region in names(deaths)) {
-    cat(paste("\n\n###", region, "\n\n"))
+    cat(paste("\n\n###", gsub("[.]", " ", region), "\n\n"))
     data <- subset(deaths, select=region)
     go(data)
   }
