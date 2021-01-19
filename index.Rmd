@@ -67,6 +67,8 @@ go <- function(deaths) {
             scale_y_continuous(labels=scales::label_number_si()) +
             ylab("Deaths"))
     cat(impact$report)
+
+    impact$summary["Cumulative",]
   }, error=message)
 }
 
@@ -78,11 +80,49 @@ total <- function(deaths) {
 }
 
 by.region <- function(deaths) {
+  excess <- data.frame()
   for (region in names(deaths)) {
-    cat(paste("\n\n###", gsub("[.]", " ", region), "\n\n"))
+    nice.region <- gsub("[.]", " ", region)
+    cat(paste("\n\n####", nice.region, "\n\n"))
     data <- subset(deaths, select=region)
-    go(data)
+    row <- go(data)
+    if (!is.null(row)) {
+      row.names(row) <- c(nice.region)
+      excess <- rbind(excess, row)
+    }
   }
+  excess
+}
+
+plot.excess <- function(excess, level="####") {
+  excess$Country <- row.names(excess)
+  excess <- excess[order(-excess$RelEffect),]
+
+  cat(paste("\n\n", level, " Relative\n\n", sep=""))
+  p <- ggplot(excess, aes(x=Country, y=RelEffect)) +
+    geom_col() +
+    geom_errorbar(aes(ymin=RelEffect.lower, ymax=RelEffect.upper)) +
+    gghighlight(p < 0.05 & !(RelEffect.lower <= 0 & 0 <= RelEffect.upper)) +
+    scale_y_continuous(labels=scales::label_percent()) +
+    xlab("") + ylab("") +
+    theme_minimal() +
+    coord_flip()
+
+  print(p)
+
+  excess <- excess[order(-excess$AbsEffect),]
+
+  cat(paste("\n\n", level, " Absolute\n\n", sep=""))
+  p <- ggplot(excess, aes(x=Country, y=AbsEffect)) +
+    geom_col() +
+    geom_errorbar(aes(ymin=AbsEffect.lower, ymax=AbsEffect.upper)) +
+    gghighlight(p < 0.05 & !(AbsEffect.lower <= 0 & 0 <= AbsEffect.upper)) +
+    scale_y_continuous(labels=scales::label_number_si()) +
+    xlab("") + ylab("") +
+    theme_minimal() +
+    coord_flip()
+
+  print(p)
 }
 ```
 
@@ -98,35 +138,99 @@ au.deaths <- read.csv.zoo(get.sheet.url("1434566235"), FUN=as.yearmon)
 nz.deaths <- read.csv.zoo(get.sheet.url("894713646"), FUN=as.yearmon)
 us.deaths <- read.csv.zoo(get.sheet.url("1095978846"), FUN=as.yearmon)
 uk.deaths <- read.csv.zoo(get.sheet.url("0"), FUN=as.yearmon)
+
+countries <- data.frame()
 ```
 
-## Australia {.tabset}
+Australia {.tabset}
+-------------------
 
-```{r au, results="asis"}
-total(au.deaths)
-by.region(au.deaths)
+### Regional {.tabset .tabset-pills}
+
+```{r au.region, results="asis"}
+au.region <- by.region(au.deaths)
 ```
 
-## New Zealand {.tabset}
+### Country
 
-```{r nz, results="asis"}
-total(nz.deaths)
-by.region(nz.deaths)
+```{r au.country, results="asis"}
+countries <- rbind(countries, Australia=total(au.deaths))
 ```
 
-## US {.tabset}
+### Excess deaths per region {.tabset .tabset-pills}
+
+```{r au.excess, results="asis"}
+plot.excess(au.region)
+```
+
+New Zealand {.tabset}
+---------------------
+
+### Regional {.tabset .tabset-pills}
+
+```{r nz.region, results="asis"}
+nz.region <- by.region(nz.deaths)
+```
+
+### Country
+
+```{r nz.country, results="asis"}
+countries <- rbind(countries, `New Zealand`=total(nz.deaths))
+```
+
+### Excess deaths per region {.tabset .tabset-pills}
+
+```{r nz.excess, results="asis"}
+plot.excess(nz.region)
+```
+
+UK {.tabset}
+------------
+
+### Regional {.tabset .tabset-pills}
+
+```{r uk.region, results="asis"}
+uk.region <- by.region(uk.deaths)
+```
+
+### Country
+
+```{r uk.country, results="asis"}
+countries <- rbind(countries, `United Kingdom`=total(uk.deaths))
+```
+
+### Excess deaths per region {.tabset .tabset-pills}
+
+```{r uk.excess, results="asis"}
+plot.excess(uk.region)
+```
+
+US {.tabset}
+------------
 
 Note: I couldn't find historical data for Puerto Rico, so it's excluded from
 impact analysis.
 
-```{r us, results="asis"}
-total(subset(us.deaths, select=-Puerto.Rico))
-by.region(us.deaths)
+### Regional {.tabset .tabset-pills}
+
+```{r us.region, results="asis"}
+us.region <- by.region(us.deaths)
 ```
 
-## UK {.tabset}
+### Country
 
-```{r uk, results="asis"}
-total(uk.deaths)
-by.region(uk.deaths)
+```{r us.country, results="asis"}
+countries <- rbind(countries,
+                   `United States`=total(subset(us.deaths, select=-Puerto.Rico)))
+```
+
+### Excess deaths per region {.tabset .tabset-pills}
+
+```{r us.excess, results="asis"}
+plot.excess(us.region)
+```
+
+# Excess deaths per country {.tabset}
+```{r country.excess, results="asis"}
+plot.excess(countries, level="##")
 ```
