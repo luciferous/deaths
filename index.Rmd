@@ -2,15 +2,22 @@
 title: "Death trends"
 output:
   html_document:
-    theme: cosmo
+    theme: paper
     mathjax: null
-    self_contained: false
     toc: true
+    self_contained: false
+    code_download: true
+    includes:
+      in_header: header.html
 ---
 
 ```{css, echo=F}
 pre.r > code {white-space: pre;}
 ```
+
+# Code
+
+Imports.
 
 ```{r setup, message=F}
 library(CausalImpact)
@@ -18,6 +25,8 @@ library(gghighlight)
 library(scales)
 library(zoo)
 ```
+
+Main logic.
 
 ```{r logic}
 go <- function(deaths) {
@@ -63,10 +72,11 @@ go <- function(deaths) {
                            post.period,
                            model.args=model.args)
 
+    cat(paste(impact$report, "\n\n"))
+
     print(plot(impact) +
             scale_y_continuous(labels=scales::label_number_si()) +
             ylab("Deaths"))
-    cat(impact$report)
 
     impact$summary["Cumulative",]
   }, error=message)
@@ -99,32 +109,32 @@ plot.excess <- function(excess, level="####") {
   excess <- excess[order(-excess$RelEffect),]
 
   cat(paste("\n\n", level, " Relative\n\n", sep=""))
-  p <- ggplot(excess, aes(x=Country, y=RelEffect)) +
+  p <- ggplot(excess, aes(x=RelEffect, y=Country)) +
     geom_col() +
-    geom_errorbar(aes(ymin=RelEffect.lower, ymax=RelEffect.upper)) +
+    geom_errorbar(aes(xmin=RelEffect.lower, xmax=RelEffect.upper)) +
     gghighlight(p < 0.05 & !(RelEffect.lower <= 0 & 0 <= RelEffect.upper)) +
-    scale_y_continuous(labels=scales::label_percent()) +
+    scale_x_continuous(labels=scales::label_percent()) +
     xlab("") + ylab("") +
-    theme_minimal() +
-    coord_flip()
+    theme_bw()
 
   print(p)
 
   excess <- excess[order(-excess$AbsEffect),]
 
   cat(paste("\n\n", level, " Absolute\n\n", sep=""))
-  p <- ggplot(excess, aes(x=Country, y=AbsEffect)) +
+  p <- ggplot(excess, aes(x=AbsEffect, y=Country)) +
     geom_col() +
-    geom_errorbar(aes(ymin=AbsEffect.lower, ymax=AbsEffect.upper)) +
+    geom_errorbar(aes(xmin=AbsEffect.lower, xmax=AbsEffect.upper)) +
     gghighlight(p < 0.05 & !(AbsEffect.lower <= 0 & 0 <= AbsEffect.upper)) +
-    scale_y_continuous(labels=scales::label_number_si()) +
+    scale_x_continuous(labels=scales::label_number_si()) +
     xlab("") + ylab("") +
-    theme_minimal() +
-    coord_flip()
+    theme_bw()
 
   print(p)
 }
 ```
+
+Download the [datasets](https://docs.google.com/spreadsheets/d/1eSaKBxUfWB1payf2OjEZt5x83CaeK_RIuq8u1heji9E/edit?usp=sharing).
 
 ```{r data}
 get.sheet.url <- function(gid) {
@@ -139,8 +149,12 @@ nz.deaths <- read.csv.zoo(get.sheet.url("894713646"), FUN=as.yearmon)
 us.deaths <- read.csv.zoo(get.sheet.url("1095978846"), FUN=as.yearmon)
 uk.deaths <- read.csv.zoo(get.sheet.url("0"), FUN=as.yearmon)
 
+# Save the output of `total` from every country so we can display excess deaths
+# statistics for each country at the end.
 countries <- data.frame()
 ```
+
+# Content
 
 ## Australia {.tabset}
 
@@ -151,19 +165,19 @@ Sources
     -   Provisional mortality statistics weekly dashboard, Jan-Oct 2020;
     -   Doctor certified deaths by week of occurrence, 2015-19.
 
+### National
+
+```{r au.country, results="asis"}
+countries <- rbind(countries, Australia=total(au.deaths))
+```
+
 ### Regional {.tabset .tabset-pills}
 
 ```{r au.region, results="asis"}
 au.region <- by.region(au.deaths)
 ```
 
-### Total
-
-```{r au.country, results="asis"}
-countries <- rbind(countries, Australia=total(au.deaths))
-```
-
-### Regional excess {.tabset .tabset-pills}
+### Excess deaths {.tabset .tabset-pills}
 
 ```{r au.excess, results="asis"}
 plot.excess(au.region)
@@ -175,19 +189,19 @@ Source
 
 -   [COVID-19 data portal](https://www.stats.govt.nz/experimental/covid-19-data-portal)
 
+### National
+
+```{r nz.country, results="asis"}
+countries <- rbind(countries, `New Zealand`=total(nz.deaths))
+```
+
 ### Regional {.tabset .tabset-pills}
 
 ```{r nz.region, results="asis"}
 nz.region <- by.region(nz.deaths)
 ```
 
-### Total
-
-```{r nz.country, results="asis"}
-countries <- rbind(countries, `New Zealand`=total(nz.deaths))
-```
-
-### Regional excess {.tabset .tabset-pills}
+### Excess deaths {.tabset .tabset-pills}
 
 ```{r nz.excess, results="asis"}
 plot.excess(nz.region)
@@ -199,19 +213,19 @@ Source
 
 -   [Deaths registered monthly in England and Wales](https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/deaths/datasets/monthlyfiguresondeathsregisteredbyareaofusualresidence)
 
+### National
+
+```{r uk.country, results="asis"}
+countries <- rbind(countries, `United Kingdom`=total(uk.deaths))
+```
+
 ### Regional {.tabset .tabset-pills}
 
 ```{r uk.region, results="asis"}
 uk.region <- by.region(uk.deaths)
 ```
 
-### Total
-
-```{r uk.country, results="asis"}
-countries <- rbind(countries, `United Kingdom`=total(uk.deaths))
-```
-
-### Regional exess {.tabset .tabset-pills}
+### Excess deaths {.tabset .tabset-pills}
 
 ```{r uk.excess, results="asis"}
 plot.excess(uk.region)
@@ -232,7 +246,14 @@ Program. Accessed at <http://wonder.cdc.gov/ucd-icd10.html> on Jan 3, 2021
 
 -   [Weekly Counts of Deaths by State and Select Causes, 2020-2021](https://data.cdc.gov/NCHS/Weekly-Counts-of-Deaths-by-State-and-Select-Causes/muzy-jte6)
 
-Note: I couldn't find historical data for Puerto Rico, so it's excluded from impact analysis.
+Note: I couldn't find pre-2020 data for Puerto Rico, so it's excluded from impact analysis.
+
+### National
+
+```{r us.country, results="asis"}
+countries <- rbind(countries,
+                   `United States`=total(subset(us.deaths, select=-Puerto.Rico)))
+```
 
 ### Regional {.tabset .tabset-pills}
 
@@ -240,20 +261,13 @@ Note: I couldn't find historical data for Puerto Rico, so it's excluded from imp
 us.region <- by.region(us.deaths)
 ```
 
-### Total
+### Excess deaths {.tabset .tabset-pills}
 
-```{r us.country, results="asis"}
-countries <- rbind(countries,
-                   `United States`=total(subset(us.deaths, select=-Puerto.Rico)))
-```
-
-### Regional excess {.tabset .tabset-pills}
-
-```{r us.excess, results="asis"}
+```{r us.excess, results="asis", fig.height=6}
 plot.excess(us.region)
 ```
 
-# Excess deaths {.tabset}
+# Global excess deaths {.tabset}
 
 ```{r country.excess, results="asis"}
 plot.excess(countries, level="##")
