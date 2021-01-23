@@ -142,8 +142,14 @@ uk.deaths <- read.csv.zoo(get.sheet.url("0"), FUN=as.yearmon)
 countries <- data.frame()
 ```
 
-Australia {.tabset}
--------------------
+## Australia {.tabset}
+
+Sources
+
+-   [Provisional Mortality Statistics](https://www.abs.gov.au/statistics/health/causes-death/provisional-mortality-statistics/latest-release#data-download)
+
+    -   Provisional mortality statistics weekly dashboard, Jan-Oct 2020;
+    -   Doctor certified deaths by week of occurrence, 2015-19.
 
 ### Regional {.tabset .tabset-pills}
 
@@ -151,20 +157,23 @@ Australia {.tabset}
 au.region <- by.region(au.deaths)
 ```
 
-### Country
+### Total
 
 ```{r au.country, results="asis"}
 countries <- rbind(countries, Australia=total(au.deaths))
 ```
 
-### Excess deaths per region {.tabset .tabset-pills}
+### Regional excess {.tabset .tabset-pills}
 
 ```{r au.excess, results="asis"}
 plot.excess(au.region)
 ```
 
-New Zealand {.tabset}
----------------------
+## New Zealand {.tabset}
+
+Source
+
+-   [COVID-19 data portal](https://www.stats.govt.nz/experimental/covid-19-data-portal)
 
 ### Regional {.tabset .tabset-pills}
 
@@ -172,20 +181,23 @@ New Zealand {.tabset}
 nz.region <- by.region(nz.deaths)
 ```
 
-### Country
+### Total
 
 ```{r nz.country, results="asis"}
 countries <- rbind(countries, `New Zealand`=total(nz.deaths))
 ```
 
-### Excess deaths per region {.tabset .tabset-pills}
+### Regional excess {.tabset .tabset-pills}
 
 ```{r nz.excess, results="asis"}
 plot.excess(nz.region)
 ```
 
-UK {.tabset}
-------------
+## UK {.tabset}
+
+Source
+
+-   [Deaths registered monthly in England and Wales](https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/deaths/datasets/monthlyfiguresondeathsregisteredbyareaofusualresidence)
 
 ### Regional {.tabset .tabset-pills}
 
@@ -193,23 +205,34 @@ UK {.tabset}
 uk.region <- by.region(uk.deaths)
 ```
 
-### Country
+### Total
 
 ```{r uk.country, results="asis"}
 countries <- rbind(countries, `United Kingdom`=total(uk.deaths))
 ```
 
-### Excess deaths per region {.tabset .tabset-pills}
+### Regional exess {.tabset .tabset-pills}
 
 ```{r uk.excess, results="asis"}
 plot.excess(uk.region)
 ```
 
-US {.tabset}
-------------
+## US {.tabset}
 
-Note: I couldn't find historical data for Puerto Rico, so it's excluded from
-impact analysis.
+Source
+
+-   [Underlying Cause of Death, 1999-2019
+Request](https://wonder.cdc.gov/ucd-icd10.html). Centers for Disease Control and
+Prevention, National Center for Health Statistics. Underlying Cause of Death
+1999-2019 on CDC WONDER Online Database, released in 2020. Data are from the
+Multiple Cause of Death Files, 1999-2019, as compiled from data provided by the
+57 vital statistics jurisdictions through the Vital Statistics Cooperative
+Program. Accessed at <http://wonder.cdc.gov/ucd-icd10.html> on Jan 3, 2021
+6:49:16 AM
+
+-   [Weekly Counts of Deaths by State and Select Causes, 2020-2021](https://data.cdc.gov/NCHS/Weekly-Counts-of-Deaths-by-State-and-Select-Causes/muzy-jte6)
+
+Note: I couldn't find historical data for Puerto Rico, so it's excluded from impact analysis.
 
 ### Regional {.tabset .tabset-pills}
 
@@ -217,20 +240,21 @@ impact analysis.
 us.region <- by.region(us.deaths)
 ```
 
-### Country
+### Total
 
 ```{r us.country, results="asis"}
 countries <- rbind(countries,
                    `United States`=total(subset(us.deaths, select=-Puerto.Rico)))
 ```
 
-### Excess deaths per region {.tabset .tabset-pills}
+### Regional excess {.tabset .tabset-pills}
 
 ```{r us.excess, results="asis"}
 plot.excess(us.region)
 ```
 
-# Excess deaths per country {.tabset}
+# Excess deaths {.tabset}
+
 ```{r country.excess, results="asis"}
 plot.excess(countries, level="##")
 ```
